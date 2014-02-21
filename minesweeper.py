@@ -140,12 +140,13 @@ class Cell(object):
                 cell.dig()
         return
 
+
 def play_game(width, height, n_mines):
     """Start MineSweeper Game."""
     game = Game(width, height, n_mines)
     while True:
         visible_grid = game.get_grid()
-        print('  ' + ''.join(map(lambda x: '{:2} '.format(x), range(game.width))))
+        print('   ' + ''.join(map('{:2} '.format, range(game.width))))
         for x in range(game.width):
             sys.stdout.write('{:2}|'.format(x))
             for y in range(game.height):
@@ -156,11 +157,21 @@ def play_game(width, height, n_mines):
                 else:
                     sys.stdout.write('{:2}|'.format(visible_grid[x][y]))
             sys.stdout.write('{:2}\n'.format(x))
-        print('   ' + ''.join(map(lambda x: '{:2} '.format(x), range(game.width))))
+        print('   ' + ''.join(map('{:2} '.format, range(game.width))))
 
-        if game.dig(*map(int, input().split())):
-            print('CLEAR ;)')
-            sys.exit()
+        try:
+            x, y = map(int, input().split())  # may raise ValueError
+            if game.dig(x, y):  # may raise IndexError
+                print('CLEAR ;)')
+                sys.exit()
+        except ValueError:
+            continue
+        except IndexError:
+            continue
+        except EOFError:
+            sys.exit(1)
+        except KeyboardInterrupt:
+            sys.exit(1)
 
 if __name__ == '__main__':
     play_game(*map(int, sys.argv[1:]))
