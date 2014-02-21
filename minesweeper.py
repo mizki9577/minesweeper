@@ -9,7 +9,7 @@ import sys
 import random
 
 
-class MineSweeper(object):
+class Game(object):
 
     """MineSweeper Game."""
 
@@ -42,7 +42,6 @@ class MineSweeper(object):
                 self.grid.append(cells[self.height * c: self.height * (c + 1)])
             if not self.grid[first_x][first_y].ismine:
                 break
-            print('retry')
 
         # Append dummy cells to prevent to count the mine on the opposite side
         for row in self.grid:
@@ -135,31 +134,33 @@ class Cell(object):
             return
         self.isdigged = True
         if self.ismine:
-            raise NotImplementedError
+            raise Exception('{}, {} is mine.'.format(self.x, self.y))
         elif self.n_mines_around == 0:
             for cell in self.mines_around:
                 cell.dig()
         return
 
-if __name__ == '__main__':
-    # やっつけ仕事
-    game = MineSweeper(*map(int, sys.argv[1:]))
-
+def play_game(width, height, n_mines):
+    """Start MineSweeper Game."""
+    game = Game(width, height, n_mines)
     while True:
         visible_grid = game.get_grid()
-        print('   ' + ''.join(map(lambda x: '%2d ' % x, range(game.width))))
+        print('  ' + ''.join(map(lambda x: '{:2} '.format(x), range(game.width))))
         for x in range(game.width):
-            sys.stdout.write('%2d|' % x)
+            sys.stdout.write('{:2}|'.format(x))
             for y in range(game.height):
                 if visible_grid[x][y] == -1:
                     sys.stdout.write('##|')
                 elif visible_grid[x][y] == 0:
                     sys.stdout.write('  |')
                 else:
-                    sys.stdout.write('%2d|' % visible_grid[x][y])
-            sys.stdout.write('%2d\n' % x)
-        print('   ' + ''.join(map(lambda x: '%2d ' % x, range(game.width))))
+                    sys.stdout.write('{:2}|'.format(visible_grid[x][y]))
+            sys.stdout.write('{:2}\n'.format(x))
+        print('   ' + ''.join(map(lambda x: '{:2} '.format(x), range(game.width))))
 
         if game.dig(*map(int, input().split())):
             print('CLEAR ;)')
             sys.exit()
+
+if __name__ == '__main__':
+    play_game(*map(int, sys.argv[1:]))
