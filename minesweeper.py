@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-MineSweeper Game.
+Minesweeper Game.
 usage: minesweeper.py [width] [height] [number of mines]
 酷い英語は気にするな。
 """
 import sys
 import random
+import time
 
 
 class Game(object):
 
-    """MineSweeper Game."""
+    """Minesweeper Game."""
 
     def __init__(self, width, height, n_mines):
         self.width = width
@@ -22,14 +23,14 @@ class Game(object):
         # List of mines
         self.mines = []
         for _ in range(n_mines):
-            self.mines.append(Cell(ismine=True))
+            self.mines.append(_Cell(ismine=True))
 
         # List of normal cells
         self.normals = []
         for _ in range(width * height - n_mines):
-            self.normals.append(Cell(ismine=False))
+            self.normals.append(_Cell(ismine=False))
 
-    def place_mines(self, first_x, first_y):
+    def _place_mines(self, first_x, first_y):
         self.notdigged = False
 
         # List of cells
@@ -44,9 +45,9 @@ class Game(object):
                 break
 
         # Append dummy cells to prevent to count the mine on the opposite side
-        for row in self.grid:
-            row.append(Cell(ismine=False))
-        self.grid.append([Cell(ismine=False)] * (self.width + 1))
+        for column in self.grid:
+            column.append(_Cell(ismine=False))
+        self.grid.append([_Cell(ismine=False)] * (self.width + 1))
 
         for x in range(self.width):
             for y in range(self.height):
@@ -77,12 +78,18 @@ class Game(object):
     def dig(self, x, y):
         """Dig surface."""
         if self.notdigged:
-            self.place_mines(x, y)
+            self._place_mines(x, y)
 
         self.grid[x][y].dig()
-        return self.count_remain() == 0
+        return self._count_remain() == 0
 
-    def count_remain(self):
+    def flag(self, x, y, state=True):
+        """Flag the cell."""
+        if not self.grid[x][y].isdigged:
+            self.grid[x][y].isflagged = state
+        return
+
+    def _count_remain(self):
         """Count up cells remaining."""
         nremain = 0
         for cell in self.normals:
@@ -91,19 +98,24 @@ class Game(object):
         return nremain
 
     def get_grid(self):
-        """Return the grid which is seen by the player.
-        -1 means the cell has not been digged.
+        """
+        Return the grid which is seen by the player.
+        0 - 8   : number of mines around the cell.
+        -1      : the cell has not been digged yet.
+        -2     : the cell has been flagged (of cource it's not digged yet).
         """
         # Return a dummy grid when no mines have never been digged
         if self.notdigged:
             return [[-1] * self.height] * self.width
 
         mines = []
-        for y in range(self.height):
-            for x in range(self.width):
+        for x in range(self.height):
+            for y in range(self.width):
                 cell = self.grid[x][y]
                 if cell.isdigged:
                     mines.append(cell.n_mines_around)
+                elif cell.isflagged:
+                    mines.append(-2)
                 else:
                     mines.append(-1)
 
@@ -114,13 +126,14 @@ class Game(object):
         return visible_grid
 
 
-class Cell(object):
+class _Cell(object):
 
     """A cell of MineSweeper game."""
 
     def __init__(self, ismine=False):
         self.ismine = ismine
         self.isdigged = False
+        self.isflagged = False
         self.x = 0
         self.y = 0
         self.n_mines_around = 0
@@ -173,5 +186,107 @@ def play_game(width, height, n_mines):
         except KeyboardInterrupt:
             sys.exit(1)
 
+
+class Solvers(object):
+
+    """Minesweeper Solvers.
+    Solvers are generator function."""
+
+    @staticmethod
+    def solver_A(width, height, n_mines):
+        """
+        1. 適当なセルを掘る
+        2. 既に掘られていて周囲に地雷のあるる全てのセルについて、
+            a. 周囲のまだ掘られていないセルの数と周囲の地雷の数が等しい場合、周囲の全てのまだ掘られていないセルにフラグを立てる
+            b. 周囲の地雷の数と周囲のフラグ済みセルの数が等しい場合、周囲の全ての未フラグセルを掘る
+        3. クリア判定が出るまで2を繰り返す
+        """
+        # 英語疲れた
+
+        game = Game(width, height, n_mines)
+        yield game.get_grid()
+
+        first_x = random.randrange(width)
+        first_y = random.randrange(height)
+        game.dig(first_x, first_y)
+        yield game.get_grid()
+
+        while True:
+            for x, column in enumerate(game.get_grid()):
+                for y, n_mines_around in enumerate(column):
+                    if n_mines_around in (0, -1):
+                        continue
+                    grid = game.get_grid()
+
+                    # listing cells around
+                    cells_around = set()
+                    for cell_x, cell_y in [
+                            (x-1, y-1), (x-1, y), (x-1, y+1),
+                            (x+1, y-1), (x+1, y), (x+1, y+1),
+                            (x, y-1), (x, y+1),
+                    ]:
+                        if 0 <= cell_x < width and 0 <= cell_y < height:
+                            cells_around.add((cell_x, cell_y))
+                    n_cells_around = len(cells_around)
+
+                    # listing undigged cells around
+                    undigged_around = set()
+                    for cell_x, cell_y in cells_around:
+                        if grid[cell_x][cell_y] in (-1, -2):
+                            undigged_around.add((cell_x, cell_y))
+                    n_undigged_around = len(undigged_around)
+
+                    # listing flagged cells around
+                    flagged_around = set()
+                    for cell_x, cell_y in cells_around:
+                        if grid[cell_x][cell_y] == -2:
+                            flagged_around.add((cell_x, cell_y))
+                    n_flagged_around = len(flagged_around)
+
+                    # listing undigged and unflagged cells around
+                    diggable_around = undigged_around - flagged_around
+                    n_diggable_around = len(diggable_around)
+
+                    if n_diggable_around == 0:
+                        continue
+
+                    if n_mines_around == n_undigged_around:
+                        for cell_x, cell_y in undigged_around:
+                            game.flag(cell_x, cell_y)
+                        yield game.get_grid()
+
+                    if n_mines_around == n_flagged_around:
+                        for cell_x, cell_y in diggable_around:
+                            if game.dig(cell_x, cell_y):
+                                return
+                        yield game.get_grid()
+
+
+def test_solver(solver, width, height, n_mines):
+    """Test solver."""
+    game = solver(width, height, n_mines)
+    count = 0
+    while True:
+        try:
+            visible_grid = game.__next__()
+        except StopIteration:
+            print('SOLVED ;)')
+            sys.exit()
+        print('   ' + ''.join(map('{:2} '.format, range(width))))
+        for x in range(width):
+            sys.stdout.write('{:2}|'.format(x))
+            for y in range(height):
+                if visible_grid[x][y] == -1:
+                    sys.stdout.write('##|')
+                elif visible_grid[x][y] == 0:
+                    sys.stdout.write('  |')
+                elif visible_grid[x][y] == -2:
+                    sys.stdout.write('!!|')
+                else:
+                    sys.stdout.write('{:2}|'.format(visible_grid[x][y]))
+            sys.stdout.write('{:2}\n'.format(x))
+        print('   ' + ''.join(map('{:2} '.format, range(width))))
+        time.sleep(0.01)
+
 if __name__ == '__main__':
-    play_game(*map(int, sys.argv[1:]))
+    test_solver(Solvers.solver_A, *map(int, sys.argv[1:]))
