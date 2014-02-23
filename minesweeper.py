@@ -227,7 +227,6 @@ class Solvers(object):
                     ]:
                         if 0 <= cell_x < width and 0 <= cell_y < height:
                             cells_around.add((cell_x, cell_y))
-                    n_cells_around = len(cells_around)
 
                     # listing undigged cells around
                     undigged_around = set()
@@ -265,28 +264,24 @@ class Solvers(object):
 def test_solver(solver, width, height, n_mines):
     """Test solver."""
     game = solver(width, height, n_mines)
-    count = 0
     while True:
         try:
             visible_grid = game.__next__()
         except StopIteration:
             print('SOLVED ;)')
             sys.exit()
-        print('   ' + ''.join(map('{:2} '.format, range(width))))
         for x in range(width):
-            sys.stdout.write('{:2}|'.format(x))
             for y in range(height):
                 if visible_grid[x][y] == -1:
-                    sys.stdout.write('##|')
+                    sys.stdout.write('#')
                 elif visible_grid[x][y] == 0:
-                    sys.stdout.write('  |')
+                    sys.stdout.write(' ')
                 elif visible_grid[x][y] == -2:
-                    sys.stdout.write('!!|')
+                    sys.stdout.write('P')
                 else:
-                    sys.stdout.write('{:2}|'.format(visible_grid[x][y]))
-            sys.stdout.write('{:2}\n'.format(x))
-        print('   ' + ''.join(map('{:2} '.format, range(width))))
-        time.sleep(0.01)
+                    sys.stdout.write('{}'.format(visible_grid[x][y]))
+            sys.stdout.write('\n')
+        sys.stdout.write('\n')
 
 if __name__ == '__main__':
     test_solver(Solvers.solver_A, *map(int, sys.argv[1:]))
