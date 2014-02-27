@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Minesweeper Game.
-usage: minesweeper.py [width] [height] [number of mines]
-酷い英語は気にするな。
+Minesweeper Game and Solver module..
 """
 import sys
 import random
@@ -173,7 +171,7 @@ def play_game(width, height, n_mines):
         print('   ' + ''.join(map('{:2} '.format, range(game.width))))
 
         try:
-            x, y = map(int, input().split())  # may raise ValueError
+            x, y = map(int, input('(x, y) :').split())  # may raise ValueError
             if game.dig(x, y):  # may raise IndexError
                 print('CLEAR ;)')
                 sys.exit()
@@ -279,9 +277,7 @@ def test_solver(solver, width, height, n_mines):
                 elif visible_grid[x][y] == -2:
                     sys.stdout.write('P')
                 else:
-                    sys.stdout.write('{}'.format(visible_grid[x][y]))
+                    sys.stdout.write(str(visible_grid[x][y]))
             sys.stdout.write('\n')
         sys.stdout.write('\n')
-
-if __name__ == '__main__':
-    test_solver(Solvers.solver_A, *map(int, sys.argv[1:]))
+        time.sleep(0.1)

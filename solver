@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Minesweeper Solver.
+usage: game [width] [height] [number of mines]
+"""
+import sys
+import minesweeper
+if __name__ == '__main__':
+    minesweeper.test_solver(minesweeper.Solvers.solver_A, *map(int, sys.argv[1:]))
