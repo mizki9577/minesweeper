@@ -223,11 +223,11 @@ def solver_A(width, height, n_mines):
                         cells_around.add((cell_x, cell_y))
 
                 # listing undigged cells around
-                undigged_around = set()
+                diggable_around = set()
                 for cell_x, cell_y in cells_around:
-                    if grid[cell_x][cell_y] in (-1, -2):
-                        undigged_around.add((cell_x, cell_y))
-                n_undigged_around = len(undigged_around)
+                    if grid[cell_x][cell_y] == -1:
+                        diggable_around.add((cell_x, cell_y))
+                n_diggable_around = len(diggable_around)
 
                 # listing flagged cells around
                 flagged_around = set()
@@ -237,14 +237,11 @@ def solver_A(width, height, n_mines):
                 n_flagged_around = len(flagged_around)
 
                 # listing undigged and unflagged cells around
-                diggable_around = undigged_around - flagged_around
-                n_diggable_around = len(diggable_around)
-
-                if n_undigged_around == n_flagged_around:
-                    solved_cells.add((x, y))
-                    continue
+                undigged_around = diggable_around | flagged_around
+                n_undigged_around = len(undigged_around)
 
                 if n_diggable_around == 0:
+                    solved_cells.add((x, y))
                     continue
 
                 if n_mines_around == n_undigged_around:
