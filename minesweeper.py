@@ -5,7 +5,6 @@ Minesweeper Game and Solver module.
 """
 import sys
 import random
-import time
 
 
 class Game(object):
@@ -203,9 +202,12 @@ def solver_A(width, height, n_mines):
     game.dig(first_x, first_y)
     yield game.get_grid()
 
+    solved_cells = set()
     while True:
         for x, column in enumerate(game.get_grid()):
             for y, n_mines_around in enumerate(column):
+                if (x, y) in solved_cells:
+                    continue
                 if n_mines_around in (0, -1):
                     continue
                 grid = game.get_grid()
@@ -237,6 +239,10 @@ def solver_A(width, height, n_mines):
                 # listing undigged and unflagged cells around
                 diggable_around = undigged_around - flagged_around
                 n_diggable_around = len(diggable_around)
+
+                if n_undigged_around == n_flagged_around:
+                    solved_cells.add((x, y))
+                    continue
 
                 if n_diggable_around == 0:
                     continue
