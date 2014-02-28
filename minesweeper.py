@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Minesweeper Game and Solver module..
+Minesweeper Game and Solver module.
 """
 import sys
 import random
@@ -45,7 +45,7 @@ class Game(object):
         # Append dummy cells to prevent to count the mine on the opposite side
         for column in self.grid:
             column.append(_Cell(ismine=False))
-        self.grid.append([_Cell(ismine=False)] * (self.width + 1))
+        self.grid.append([_Cell(ismine=False)] * (self.height + 1))
 
         for x in range(self.width):
             for y in range(self.height):
@@ -107,8 +107,8 @@ class Game(object):
             return [[-1] * self.height] * self.width
 
         mines = []
-        for x in range(self.height):
-            for y in range(self.width):
+        for x in range(self.width):
+            for y in range(self.height):
                 cell = self.grid[x][y]
                 if cell.isdigged:
                     mines.append(cell.n_mines_around)
@@ -119,7 +119,7 @@ class Game(object):
 
         visible_grid = []
         for c in range(self.width):
-            visible_grid.append(mines[self.width * c: self.width * (c + 1)])
+            visible_grid.append(mines[self.height * c: self.height * (c + 1)])
 
         return visible_grid
 
@@ -158,20 +158,20 @@ def play_game(width, height, n_mines):
     while True:
         visible_grid = game.get_grid()
         print('   ' + ''.join(map('{:2} '.format, range(game.width))))
-        for x in range(game.width):
-            sys.stdout.write('{:2}|'.format(x))
-            for y in range(game.height):
+        for y in range(game.height):
+            sys.stdout.write('{:2}|'.format(y))
+            for x in range(game.width):
                 if visible_grid[x][y] == -1:
                     sys.stdout.write('##|')
                 elif visible_grid[x][y] == 0:
                     sys.stdout.write('  |')
                 else:
                     sys.stdout.write('{:2}|'.format(visible_grid[x][y]))
-            sys.stdout.write('{:2}\n'.format(x))
+            sys.stdout.write('{:2}\n'.format(y))
         print('   ' + ''.join(map('{:2} '.format, range(game.width))))
 
         try:
-            x, y = map(int, input('(x, y) :').split())  # may raise ValueError
+            x, y = map(int, input('(x, y) : ').split())  # may raise ValueError
             if game.dig(x, y):  # may raise IndexError
                 print('CLEAR ;)')
                 sys.exit()
@@ -185,78 +185,72 @@ def play_game(width, height, n_mines):
             sys.exit(1)
 
 
-class Solvers(object):
+def solver_A(width, height, n_mines):
+    """
+    1. 適当なセルを掘る
+    2. 既に掘られていて周囲に地雷のあるる全てのセルについて、
+        a. 周囲のまだ掘られていないセルの数と周囲の地雷の数が等しい場合、周囲の全てのまだ掘られていないセルにフラグを立てる
+        b. 周囲の地雷の数と周囲のフラグ済みセルの数が等しい場合、周囲の全ての未フラグセルを掘る
+    3. クリア判定が出るまで2を繰り返す
+    """
+    # 英語疲れた
 
-    """Minesweeper Solvers.
-    Solvers are generator function."""
+    game = Game(width, height, n_mines)
+    yield game.get_grid()
 
-    @staticmethod
-    def solver_A(width, height, n_mines):
-        """
-        1. 適当なセルを掘る
-        2. 既に掘られていて周囲に地雷のあるる全てのセルについて、
-            a. 周囲のまだ掘られていないセルの数と周囲の地雷の数が等しい場合、周囲の全てのまだ掘られていないセルにフラグを立てる
-            b. 周囲の地雷の数と周囲のフラグ済みセルの数が等しい場合、周囲の全ての未フラグセルを掘る
-        3. クリア判定が出るまで2を繰り返す
-        """
-        # 英語疲れた
+    first_x = random.randrange(width)
+    first_y = random.randrange(height)
+    game.dig(first_x, first_y)
+    yield game.get_grid()
 
-        game = Game(width, height, n_mines)
-        yield game.get_grid()
+    while True:
+        for x, column in enumerate(game.get_grid()):
+            for y, n_mines_around in enumerate(column):
+                if n_mines_around in (0, -1):
+                    continue
+                grid = game.get_grid()
 
-        first_x = random.randrange(width)
-        first_y = random.randrange(height)
-        game.dig(first_x, first_y)
-        yield game.get_grid()
+                # listing cells around
+                cells_around = set()
+                for cell_x, cell_y in [
+                        (x-1, y-1), (x-1, y), (x-1, y+1),
+                        (x+1, y-1), (x+1, y), (x+1, y+1),
+                        (x, y-1), (x, y+1),
+                ]:
+                    if 0 <= cell_x < width and 0 <= cell_y < height:
+                        cells_around.add((cell_x, cell_y))
 
-        while True:
-            for x, column in enumerate(game.get_grid()):
-                for y, n_mines_around in enumerate(column):
-                    if n_mines_around in (0, -1):
-                        continue
-                    grid = game.get_grid()
+                # listing undigged cells around
+                undigged_around = set()
+                for cell_x, cell_y in cells_around:
+                    if grid[cell_x][cell_y] in (-1, -2):
+                        undigged_around.add((cell_x, cell_y))
+                n_undigged_around = len(undigged_around)
 
-                    # listing cells around
-                    cells_around = set()
-                    for cell_x, cell_y in [
-                            (x-1, y-1), (x-1, y), (x-1, y+1),
-                            (x+1, y-1), (x+1, y), (x+1, y+1),
-                            (x, y-1), (x, y+1),
-                    ]:
-                        if 0 <= cell_x < width and 0 <= cell_y < height:
-                            cells_around.add((cell_x, cell_y))
+                # listing flagged cells around
+                flagged_around = set()
+                for cell_x, cell_y in cells_around:
+                    if grid[cell_x][cell_y] == -2:
+                        flagged_around.add((cell_x, cell_y))
+                n_flagged_around = len(flagged_around)
 
-                    # listing undigged cells around
-                    undigged_around = set()
-                    for cell_x, cell_y in cells_around:
-                        if grid[cell_x][cell_y] in (-1, -2):
-                            undigged_around.add((cell_x, cell_y))
-                    n_undigged_around = len(undigged_around)
+                # listing undigged and unflagged cells around
+                diggable_around = undigged_around - flagged_around
+                n_diggable_around = len(diggable_around)
 
-                    # listing flagged cells around
-                    flagged_around = set()
-                    for cell_x, cell_y in cells_around:
-                        if grid[cell_x][cell_y] == -2:
-                            flagged_around.add((cell_x, cell_y))
-                    n_flagged_around = len(flagged_around)
+                if n_diggable_around == 0:
+                    continue
 
-                    # listing undigged and unflagged cells around
-                    diggable_around = undigged_around - flagged_around
-                    n_diggable_around = len(diggable_around)
+                if n_mines_around == n_undigged_around:
+                    for cell_x, cell_y in undigged_around:
+                        game.flag(cell_x, cell_y)
+                    yield game.get_grid()
 
-                    if n_diggable_around == 0:
-                        continue
-
-                    if n_mines_around == n_undigged_around:
-                        for cell_x, cell_y in undigged_around:
-                            game.flag(cell_x, cell_y)
-                        yield game.get_grid()
-
-                    if n_mines_around == n_flagged_around:
-                        for cell_x, cell_y in diggable_around:
-                            if game.dig(cell_x, cell_y):
-                                return
-                        yield game.get_grid()
+                if n_mines_around == n_flagged_around:
+                    for cell_x, cell_y in diggable_around:
+                        if game.dig(cell_x, cell_y):
+                            return
+                    yield game.get_grid()
 
 
 def test_solver(solver, width, height, n_mines):
@@ -268,8 +262,8 @@ def test_solver(solver, width, height, n_mines):
         except StopIteration:
             print('SOLVED ;)')
             sys.exit()
-        for x in range(width):
-            for y in range(height):
+        for y in range(height):
+            for x in range(width):
                 if visible_grid[x][y] == -1:
                     sys.stdout.write('#')
                 elif visible_grid[x][y] == 0:
