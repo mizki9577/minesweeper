@@ -260,18 +260,19 @@ def test_solver(solver, width, height, n_mines):
         try:
             visible_grid = game.__next__()
         except StopIteration:
-            print('SOLVED ;)')
+            print('\nSOLVED ;)')
             sys.exit()
+        output = '\n'
         for y in range(height):
+            output += '\n'
             for x in range(width):
                 if visible_grid[x][y] == -1:
-                    sys.stdout.write('#')
+                    output += '#'
                 elif visible_grid[x][y] == 0:
-                    sys.stdout.write(' ')
+                    output += ' '
                 elif visible_grid[x][y] == -2:
-                    sys.stdout.write('P')
+                    output += 'P'
                 else:
-                    sys.stdout.write(str(visible_grid[x][y]))
-            sys.stdout.write('\n')
-        sys.stdout.write('\n')
-        time.sleep(0.1)
+                    output += str(visible_grid[x][y])
+        sys.stdout.write(output)
+        #time.sleep(0.1)
