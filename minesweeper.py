@@ -259,12 +259,7 @@ def solver_A(width, height, n_mines):
 def test_solver(solver, width, height, n_mines):
     """Test solver."""
     game = solver(width, height, n_mines)
-    while True:
-        try:
-            visible_grid = game.__next__()
-        except StopIteration:
-            print('\nSOLVED ;)')
-            sys.exit()
+    for visible_grid in game:
         output = '\n'
         for y in range(height):
             output += '\n'
@@ -278,4 +273,4 @@ def test_solver(solver, width, height, n_mines):
                 else:
                     output += str(visible_grid[x][y])
         sys.stdout.write(output)
-        #time.sleep(0.1)
+    print('\nSOLVED ;)')
