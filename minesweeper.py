@@ -78,7 +78,7 @@ class Game(object):
             self._place_mines(x, y)
 
         self.grid[x][y].dig()
-        return self._count_remain() == 0
+        return
 
     def flag(self, x, y, state=True):
         """Flag the cell."""
@@ -97,9 +97,9 @@ class Game(object):
     def get_grid(self):
         """
         Return the grid which is seen by the player.
-        0 - 8   : number of mines around the cell.
+         0 -  8 : number of mines around the cell.
         -1      : the cell has not been digged yet.
-        -2     : the cell has been flagged (of cource it's not digged yet).
+        -2      : the cell has been flagged (of cource it's not digged yet).
         """
         # Return a dummy grid when no mines have never been digged
         if self.notdigged:
@@ -204,6 +204,8 @@ def solver_A(width, height, n_mines):
 
     solved_cells = set()
     while True:
+        grid_hash = hash(frozenset(solved_cells))
+
         for x, column in enumerate(game.get_grid()):
             for y, n_mines_around in enumerate(column):
                 if (x, y) in solved_cells:
@@ -251,9 +253,16 @@ def solver_A(width, height, n_mines):
 
                 if n_mines_around == n_flagged_around:
                     for cell_x, cell_y in diggable_around:
-                        if game.dig(cell_x, cell_y):
-                            return
+                        game.dig(cell_x, cell_y)
                     yield game.get_grid()
+
+        # solved
+        if game._count_remain() == 0:
+            return
+        # can't solve
+        # 実は1周して変化なしでも2周目で変化があることがあるのでこれじゃダメ
+        if grid_hash == hash(frozenset(solved_cells)):
+            return
 
 
 def test_solver(solver, width, height, n_mines):
@@ -273,4 +282,10 @@ def test_solver(solver, width, height, n_mines):
                 else:
                     output += str(visible_grid[x][y])
         sys.stdout.write(output)
-    print('\nSOLVED ;)')
+
+    result = '\nSOLVED ;)'
+    for l in visible_grid:
+        if -1 in l:
+            result = '\nFAILED :('
+            break
+    print(result)
