@@ -86,8 +86,8 @@ class Game(object):
             self.grid[x][y].isflagged = state
         return
 
-    def _count_remain(self):
-        """Count up cells remaining."""
+    def count_remain(self):
+        """Count up mines remaining."""
         nremain = 0
         for cell in self.normals:
             if not cell.isdigged:
@@ -257,7 +257,7 @@ def solver_A(width, height, n_mines):
                     yield game.get_grid()
 
         # solved
-        if game._count_remain() == 0:
+        if game.count_remain() == 0:
             return
         # can't solve
         # 実は1周して変化なしでも2周目で変化があることがあるのでこれじゃダメ
@@ -266,7 +266,7 @@ def solver_A(width, height, n_mines):
 
 
 def test_solver(solver, width, height, n_mines):
-    """Test solver."""
+    """Test a solver."""
     game = solver(width, height, n_mines)
     for visible_grid in game:
         output = '\n'
