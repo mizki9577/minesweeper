@@ -204,7 +204,7 @@ def solver_A(width, height, n_mines):
 
     solved_cells = set()
     while True:
-        map_has_changed = False
+        map_has_not_changed = True
         for x, column in enumerate(game.get_grid()):
             for y, n_mines_around in enumerate(column):
                 if (x, y) in solved_cells:
@@ -247,13 +247,13 @@ def solver_A(width, height, n_mines):
 
                 if n_mines_around == n_undigged_around:
                     for cell_x, cell_y in undigged_around:
-                        map_has_changed = True
+                        map_has_not_changed = False
                         game.flag(cell_x, cell_y)
                     yield game.get_grid()
 
                 if n_mines_around == n_flagged_around:
                     for cell_x, cell_y in diggable_around:
-                        map_has_changed = True
+                        map_has_not_changed = False
                         game.dig(cell_x, cell_y)
                     yield game.get_grid()
 
@@ -262,7 +262,7 @@ def solver_A(width, height, n_mines):
             return
 
         # can't solve
-        if not map_has_changed:
+        if map_has_not_changed:
             return
 
 
