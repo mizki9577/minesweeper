@@ -241,16 +241,20 @@ def solver_A(width, height, n_mines):
                 undigged_around = diggable_around | flagged_around
                 n_undigged_around = len(undigged_around)
 
+                # when there is no diggable cells around
+                # mark solved
                 if n_diggable_around == 0:
                     solved_cells.add((x, y))
                     continue
 
+                # flagging
                 if n_mines_around == n_undigged_around:
                     for cell_x, cell_y in undigged_around:
                         map_has_not_changed = False
                         game.flag(cell_x, cell_y)
                     yield game.get_grid()
 
+                # digging
                 if n_mines_around == n_flagged_around:
                     for cell_x, cell_y in diggable_around:
                         map_has_not_changed = False
