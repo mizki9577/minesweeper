@@ -204,8 +204,7 @@ def solver_A(width, height, n_mines):
 
     solved_cells = set()
     while True:
-        grid_hash = hash(frozenset(solved_cells))
-
+        map_has_changed = False
         for x, column in enumerate(game.get_grid()):
             for y, n_mines_around in enumerate(column):
                 if (x, y) in solved_cells:
@@ -217,9 +216,9 @@ def solver_A(width, height, n_mines):
                 # listing cells around
                 cells_around = set()
                 for cell_x, cell_y in [
-                        (x-1, y-1), (x-1, y), (x-1, y+1),
-                        (x+1, y-1), (x+1, y), (x+1, y+1),
-                        (x, y-1), (x, y+1),
+                    (x-1, y-1), (x-1, y), (x-1, y+1),
+                    (x+1, y-1), (x+1, y), (x+1, y+1),
+                    (x, y-1), (x, y+1),
                 ]:
                     if 0 <= cell_x < width and 0 <= cell_y < height:
                         cells_around.add((cell_x, cell_y))
@@ -248,20 +247,22 @@ def solver_A(width, height, n_mines):
 
                 if n_mines_around == n_undigged_around:
                     for cell_x, cell_y in undigged_around:
+                        map_has_changed = True
                         game.flag(cell_x, cell_y)
                     yield game.get_grid()
 
                 if n_mines_around == n_flagged_around:
                     for cell_x, cell_y in diggable_around:
+                        map_has_changed = True
                         game.dig(cell_x, cell_y)
                     yield game.get_grid()
 
         # solved
         if game.count_remain() == 0:
             return
+
         # can't solve
-        # 実は1周して変化なしでも2周目で変化があることがあるのでこれじゃダメ
-        if grid_hash == hash(frozenset(solved_cells)):
+        if not map_has_changed:
             return
 
 
