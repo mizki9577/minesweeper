@@ -162,7 +162,11 @@ It also has information on the number and location of
 
 
 def play_game(width, height, n_mines):
-    game = Game(width, height, n_mines)
+    """
+    This is the entry point for running the code. Bash script (game) interfaces command line to this python code
+    This creates a game with the given grid size and number of mines
+    """
+    game = Game(width, height, n_mines) 
     while True:
         visible_grid = game.get_grid()
         print('   ' + ''.join(map('{:2} '.format, range(game.width))))
