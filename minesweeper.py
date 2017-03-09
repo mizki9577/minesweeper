@@ -134,10 +134,10 @@ class Game(object):
 
 
 class _Cell(object):
-"""
-The _Cell class has fields to indicate the location (x,y) and state (isdigged etc).
-It also has information on the number and location of 
-"""
+    """
+    The _Cell class has fields to indicate the location (x,y) and state (isdigged etc).
+    It also has information on the number and location of 
+    """
 
     def __init__(self, ismine=False):
         self.ismine = ismine
@@ -164,23 +164,24 @@ It also has information on the number and location of
 def play_game(width, height, n_mines):
     """
     This is the entry point for running the code. Bash script (game) interfaces command line to this python code
-    This creates a game with the given grid size and number of mines
+    This creates a game with the given grid size and number of mines. Also accepts user input and displays
+    updated game board to command line
     """
     game = Game(width, height, n_mines) 
-    while True:
-        visible_grid = game.get_grid()
-        print('   ' + ''.join(map('{:2} '.format, range(game.width))))
-        for y in range(game.height):
-            sys.stdout.write('{:2}|'.format(y))
-            for x in range(game.width):
-                if visible_grid[x][y] == -1:
+    while True: #until the end of game or until error occurs
+        visible_grid = game.get_grid() # get parseable and printable grid information
+        print('   ' + ''.join(map('{:2} '.format, range(game.width)))) # print indices around border of game grid
+        for y in range(game.height): # print columns
+            sys.stdout.write('{:2}|'.format(y)) #print row index
+            for x in range(game.width): #print row contents
+                if visible_grid[x][y] == -1: #if covered, print '#'
                     sys.stdout.write('##|')
-                elif visible_grid[x][y] == 0:
+                elif visible_grid[x][y] == 0: # if uncovered, print blank space
                     sys.stdout.write('  |')
                 else:
-                    sys.stdout.write('{:2}|'.format(visible_grid[x][y]))
-            sys.stdout.write('{:2}\n'.format(y))
-        print('   ' + ''.join(map('{:2} '.format, range(game.width))))
+                    sys.stdout.write('{:2}|'.format(visible_grid[x][y])) #else print the number of adjacent mines
+            sys.stdout.write('{:2}\n'.format(y)) # print on next line.
+        print('   ' + ''.join(map('{:2} '.format, range(game.width)))) # print indices around bottom border
 
         try:
             x, y = map(int, input('(x, y) : ').split())  # may raise ValueError
@@ -198,94 +199,101 @@ def play_game(width, height, n_mines):
 
 
 def solver_A(width, height, n_mines):
-
+    """
+    solver_A creates a new game and iterates over cells until game is solved or
+    it cannot progress further
+    """
     game = Game(width, height, n_mines)
-    yield game.get_grid()
+    yield game.get_grid() # generate game grid
 
-    first_x = random.randrange(width)
+    first_x = random.randrange(width) #make initial random guess
     first_y = random.randrange(height)
-    game.dig(first_x, first_y)
-    yield game.get_grid()
+    game.dig(first_x, first_y) #dig at this guess
+    yield game.get_grid() #see results of guess
 
-    solved_cells = set()
-    while True:
-        map_has_not_changed = True
-        for x, column in enumerate(game.get_grid()):
-            for y, n_mines_around in enumerate(column):
+    solved_cells = set() # set of safe uncovered cells
+    while True: #iterate until solved or game is non-determinate
+        map_has_not_changed = True #flag to indicate that we can't solve board without guessing
+        for x, column in enumerate(game.get_grid()): #iterate over columns, x is index of column
+            for y, n_mines_around in enumerate(column): #iterate over entries of column, retrieve number of mines adjacent
                 if (x, y) in solved_cells:
                     continue
-                if n_mines_around in (0, -1):
-                    continue
-                grid = game.get_grid()
+                if n_mines_around in (0, -1): #if cell uncovered or has no adjacent mines
+                    continue #do nothing
+                grid = game.get_grid() #update grid model
 
-                cells_around = set()
+                cells_around = set() # set of cells adjacent to current cell
                 for cell_x, cell_y in [
                     (x-1, y-1), (x-1, y), (x-1, y+1),
                     (x+1, y-1), (x+1, y), (x+1, y+1),
                     (x, y-1), (x, y+1),
                 ]:
                     if 0 <= cell_x < width and 0 <= cell_y < height:
-                        cells_around.add((cell_x, cell_y))
+                        #populate cells_around with index tuples of adjacent cells
+                        cells_around.add((cell_x, cell_y)) 
 
-                diggable_around = set()
+                diggable_around = set() # set of adjacent cells that are still covered
                 for cell_x, cell_y in cells_around:
-                    if grid[cell_x][cell_y] == -1:
-                        diggable_around.add((cell_x, cell_y))
+                    if grid[cell_x][cell_y] == -1: # if adjacent cell is uncovered
+                        diggable_around.add((cell_x, cell_y)) # add to set of uncovered adjacent cells
                 n_diggable_around = len(diggable_around)
 
-                flagged_around = set()
+                flagged_around = set() #set of flagged adjacent cells
                 for cell_x, cell_y in cells_around:
-                    if grid[cell_x][cell_y] == -2:
-                        flagged_around.add((cell_x, cell_y))
+                    if grid[cell_x][cell_y] == -2: # if adjacent cell flagged
+                        flagged_around.add((cell_x, cell_y)) #add to set
                 n_flagged_around = len(flagged_around)
 
-                undigged_around = diggable_around | flagged_around
-                n_undigged_around = len(undigged_around)
+                undigged_around = diggable_around | flagged_around #union of two previously constructed sets
+                n_undigged_around = len(undigged_around) # number of adjacent uncoverable cell candidates
 
-                if n_diggable_around == 0:
-                    solved_cells.add((x, y))
+                if n_diggable_around == 0: # if no adjacent cells can be uncovered
+                    solved_cells.add((x, y)) # this cell is solved
                     continue
 
-                if n_mines_around == n_undigged_around:
+                if n_mines_around == n_undigged_around: #if all covered adjacent cells are mines
                     for cell_x, cell_y in undigged_around:
-                        map_has_not_changed = False
-                        game.flag(cell_x, cell_y)
-                    yield game.get_grid()
+                        map_has_not_changed = False #we've found a mine(s)
+                        game.flag(cell_x, cell_y) #flag that mine
+                    yield game.get_grid() #update grid
 
-                if n_mines_around == n_flagged_around:
+                if n_mines_around == n_flagged_around: #if all adjacent mines are accounted for
                     for cell_x, cell_y in diggable_around:
-                        map_has_not_changed = False
-                        game.dig(cell_x, cell_y)
+                        map_has_not_changed = False # we've uncovered safe cells
+                        game.dig(cell_x, cell_y) # dig everywhere adjacent except where mines are located
                     yield game.get_grid()
 
-        if game.count_remain() == 0:
-            return
+        if game.count_remain() == 0: # if all safe cells are uncovered
+            return #we've won
 
-        if map_has_not_changed:
-            return
+        if map_has_not_changed: #if solving cannot progress further
+            return # cannot solve without guessing
 
 
 def test_solver(solver, width, height, n_mines):
-    """Test a solver."""
+    """
+    This function interfaces command line calls to the solver module. This
+    function prints the final grid that the solver produces
+    """
     game = solver(width, height, n_mines)
     for visible_grid in game:
-        output = '\n'
+        output = '\n' # separate solution by a newline
         for y in range(height):
-            output += '\n'
+            output += '\n' # print next row
             for x in range(width):
-                if visible_grid[x][y] == -1:
+                if visible_grid[x][y] == -1: #if cell covered
                     output += '#'
-                elif visible_grid[x][y] == 0:
+                elif visible_grid[x][y] == 0: #if cell uncovered
                     output += ' '
-                elif visible_grid[x][y] == -2:
+                elif visible_grid[x][y] == -2: #if cell is possible a mine, but not determineable
                     output += 'P'
                 else:
-                    output += str(visible_grid[x][y])
+                    output += str(visible_grid[x][y]) #else output number of adjacent mines
         sys.stdout.write(output)
 
     result = '\nSOLVED ;)'
     for l in visible_grid:
-        if -1 in l:
-            result = '\nFAILED :('
+        if -1 in l: # if covered cell exists in solution 
+            result = '\nFAILED :(' # solver was not able to complete puzzle
             break
     print(result)
