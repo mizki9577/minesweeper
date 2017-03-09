@@ -134,24 +134,29 @@ class Game(object):
 
 
 class _Cell(object):
+"""
+The _Cell class has fields to indicate the location (x,y) and state (isdigged etc).
+It also has information on the number and location of 
+"""
 
     def __init__(self, ismine=False):
         self.ismine = ismine
         self.isdigged = False
         self.isflagged = False
-        self.x = 0
+        self.x = 0 #location on grid
         self.y = 0
         self.n_mines_around = 0
-        self.mines_around = []
+        self.mines_around = [] # set of 8 adjacent mines (diagonals included). This set will be built by the Game object (terrible design)
+        
 
-    def dig(self):
-        if self.isdigged:
+    def dig(self): #uncovers cell, updates status of cell and indicates when mine is uncovered 
+        if self.isdigged: # if already uncovered, do nothing
             return
-        self.isdigged = True
+        self.isdigged = True 
         if self.ismine:
-            raise Exception('{}, {} is mine.'.format(self.x, self.y))
-        elif self.n_mines_around == 0:
-            for cell in self.mines_around:
+            raise Exception('{}, {} is mine.'.format(self.x, self.y)) # end game when mine is uncovered
+        elif self.n_mines_around == 0: # if no mines are adjacent...
+            for cell in self.mines_around: # dig all around this square. Guaranteed to not uncover any mines
                 cell.dig()
         return
 
